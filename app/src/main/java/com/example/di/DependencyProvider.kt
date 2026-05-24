@@ -3,9 +3,8 @@ package com.example.di
 import android.content.Context
 import androidx.room.Room
 import com.example.data.local.PlayerDatabase
-import com.example.domain.repository.LocalMediaScanner
+import com.example.data.repository.MediaRepositoryImpl
 import com.example.data.repository.PlaylistRepositoryImpl
-import com.example.data.repository.HistoryRepositoryImpl
 
 /**
  * Manual Dependency Injection Container.
@@ -21,16 +20,16 @@ class DependencyProvider(private val applicationContext: Context) {
         ).build()
     }
 
-    val localMediaScanner: LocalMediaScanner by lazy {
-        LocalMediaScanner(applicationContext)
+    val localMediaScanner: com.example.domain.repository.LocalMediaScanner by lazy {
+        com.example.domain.repository.LocalMediaScanner(applicationContext)
+    }
+
+    val mediaRepository: MediaRepositoryImpl by lazy {
+        MediaRepositoryImpl(applicationContext, database.videoDao(), database.audioDao(), database.historyDao())
     }
 
     val playlistRepository: PlaylistRepositoryImpl by lazy {
         PlaylistRepositoryImpl(database.playlistDao())
-    }
-
-    val historyRepository: HistoryRepositoryImpl by lazy {
-        HistoryRepositoryImpl(database.mediaDao())
     }
 
     companion object {

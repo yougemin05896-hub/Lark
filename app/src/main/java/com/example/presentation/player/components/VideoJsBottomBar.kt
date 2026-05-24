@@ -1,6 +1,10 @@
 package com.example.presentation.player.components
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -12,7 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.components.liquidGlass
+import com.example.ui.components.LiquidGlassBox
 import com.example.ui.theme.GlassIcons
 
 @Composable
@@ -28,78 +32,83 @@ fun VideoJsBottomBar(
     onToggleFullscreen: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    LiquidGlassBox(
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp)
-            .liquidGlass(shape = RoundedCornerShape(16.dp))
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(16.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        VideoJsTimeline(
-            currentTimeMs = currentTimeMs,
-            totalTimeMs = totalTimeMs,
-            onSeek = onSeek,
-            modifier = Modifier.padding(vertical = 4.dp)
-        )
-
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            // Left Group: Play/Pause and Time
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onPlayPause) {
-                    Icon(
-                        imageVector = if (isPlaying) GlassIcons.Pause else GlassIcons.Play,
-                        contentDescription = "Play/Pause",
-                        tint = Color.White
+            VideoJsTimeline(
+                currentTimeMs = currentTimeMs,
+                totalTimeMs = totalTimeMs,
+                onSeek = onSeek,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Left Group: Play/Pause and Time
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onPlayPause) {
+                        Icon(
+                            imageVector = if (isPlaying) GlassIcons.Pause else GlassIcons.Play,
+                            contentDescription = "Play/Pause",
+                            tint = Color.White
+                        )
+                    }
+
+                    Text(
+                        text = "${formatDuration(currentTimeMs)} / ${formatDuration(totalTimeMs)}",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(start = 8.dp)
                     )
                 }
 
-                Text(
-                    text = "${formatDuration(currentTimeMs)} / ${formatDuration(totalTimeMs)}",
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
+                // Right Group: Volume, CC, Settings, Fullscreen
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onToggleMute) {
+                        Icon(
+                            imageVector = if (isMuted) GlassIcons.VolumeOff else GlassIcons.VolumeUp,
+                            contentDescription = "Volume",
+                            tint = Color.White
+                        )
+                    }
 
-            // Right Group: Volume, CC, Settings, Fullscreen
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onToggleMute) {
-                    Icon(
-                        imageVector = if (isMuted) GlassIcons.VolumeOff else GlassIcons.VolumeUp,
-                        contentDescription = "Volume",
-                        tint = Color.White
-                    )
-                }
+                    IconButton(onClick = { /* Captions toggle handled at player level typically */ }) {
+                        Icon(
+                            imageVector = GlassIcons.Subtitles,
+                            contentDescription = "Subtitles",
+                            tint = Color.White
+                        )
+                    }
 
-                IconButton(onClick = { /* Captions toggle handled at player level typically */ }) {
-                    Icon(
-                        imageVector = GlassIcons.Subtitles,
-                        contentDescription = "Subtitles",
-                        tint = Color.White
-                    )
-                }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            imageVector = GlassIcons.Settings,
+                            contentDescription = "Settings",
+                            tint = Color.White
+                        )
+                    }
 
-                IconButton(onClick = onOpenSettings) {
-                    Icon(
-                        imageVector = GlassIcons.Settings,
-                        contentDescription = "Settings",
-                        tint = Color.White
-                    )
-                }
-
-                IconButton(onClick = onToggleFullscreen) {
-                    Icon(
-                        imageVector = GlassIcons.Fullscreen,
-                        contentDescription = "Fullscreen",
-                        tint = Color.White
-                    )
+                    IconButton(onClick = onToggleFullscreen) {
+                        Icon(
+                            imageVector = GlassIcons.Fullscreen,
+                            contentDescription = "Fullscreen",
+                            tint = Color.White
+                        )
+                    }
                 }
             }
         }

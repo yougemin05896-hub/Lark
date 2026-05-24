@@ -1,6 +1,8 @@
 package com.example.presentation.player.components
 
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,15 +28,23 @@ fun VideoJsTimeline(
     val interactionSource = remember { MutableInteractionSource() }
     val isDragged by interactionSource.collectIsDraggedAsState()
     
-    // Sleek razor-thin slider that expands slightly when dragged
-    val trackHeight by animateDpAsState(targetValue = if (isDragged) 6.dp else 2.dp)
+    // Sleek razor-thin slider that expands from 2.dp to 6.dp when dragged
+    // Utilizes fluid spring physics as per 2026 Liquid Glass specs
+    val trackHeight by animateDpAsState(
+        targetValue = if (isDragged) 6.dp else 2.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "timelineHeight"
+    )
 
     Slider(
         value = if (totalTimeMs > 0) currentTimeMs.toFloat() / totalTimeMs else 0f,
         onValueChange = onSeek,
         modifier = modifier
             .fillMaxWidth()
-            .height(trackHeight), // Will animate height changes
+            .height(24.dp), // Maintain a reasonable touch target height invisibly
         interactionSource = interactionSource,
         colors = SliderDefaults.colors(
             thumbColor = Color.White,
@@ -42,7 +52,7 @@ fun VideoJsTimeline(
             inactiveTrackColor = Color.White.copy(alpha = 0.3f)
         ),
         thumb = {
-            // Hide the thumb completely when not dragged for the Video.js sleek look
+            // Hide the thumb completely when not dragged for the sleek, borderless Video.js look
             if (isDragged) {
                 SliderDefaults.Thumb(
                     interactionSource = interactionSource,

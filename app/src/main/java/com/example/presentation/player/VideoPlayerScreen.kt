@@ -2,24 +2,29 @@ package com.example.presentation.player
 
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -32,7 +37,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun VideoPlayerScreen(
     uriString: String,
-    viewModel: VideoPlayerViewModel = viewModel()
+    viewModel: PlayerViewModel? = null,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     var isPlaying by remember { mutableStateOf(true) }
@@ -42,7 +48,8 @@ fun VideoPlayerScreen(
     
     var currentTime by remember { mutableStateOf(0L) }
     var totalTime by remember { mutableStateOf(0L) }
-
+    var currentCaption by remember { mutableStateOf("") }
+    
     var showSettingsSheet by remember { mutableStateOf(false) }
 
     val exoPlayer = remember {
@@ -58,16 +65,17 @@ fun VideoPlayerScreen(
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(isPlayingState: Boolean) {
                 isPlaying = isPlayingState
+                if (!isPlayingState) {
+                    showControls = true // Always show controls when paused
+                }
             }
             override fun onPlaybackStateChanged(playbackState: Int) {
                 if (playbackState == Player.STATE_READY) {
-                    totalTime = exoPlayer.duration.coerceAtLeast(0L)
+                    totalTime = exoPlayer.duration.coerceAtLeast(0)
                 }
             }
         }
         exoPlayer.addListener(listener)
-        viewModel.enableAiCaptions(uriString)
-        
         onDispose {
             exoPlayer.removeListener(listener)
             exoPlayer.release()
@@ -83,23 +91,22 @@ fun VideoPlayerScreen(
 
     LaunchedEffect(showControls, isPlaying, showSettingsSheet) {
         if (showControls && isPlaying && !showSettingsSheet) {
-            delay(3500)
+            delay(3500) // 3.5-second auto-hide logic
             showControls = false
         }
     }
 
-    val currentCaption by viewModel.currentCaption.collectAsState()
-
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = Color.Black
-    ) { innerPadding ->
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
+        val interactionSource = remember { MutableInteractionSource() }
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
                 .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
+                    interactionSource = interactionSource,
                     indication = null
                 ) {
                     showControls = !showControls
@@ -109,7 +116,7 @@ fun VideoPlayerScreen(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
                         player = exoPlayer
-                        useController = false 
+                        useController = false
                     }
                 },
                 modifier = Modifier.fillMaxSize()
@@ -124,21 +131,28 @@ fun VideoPlayerScreen(
                         .background(Color(0x88000000))
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Text(text = currentCaption, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text(text = currentCaption, color = Color.White)
                 }
             }
 
             // Big Center Play/Pause Indicator (Fades out automatically)
-            CenterPlayPauseNode(
-                isPlaying = isPlaying,
+            AnimatedVisibility(
+                visible = showControls,
+                enter = fadeIn(tween(300)),
+                exit = fadeOut(tween(300)),
                 modifier = Modifier.align(Alignment.Center)
-            )
+            ) {
+                CenterPlayPauseNode(
+                    isPlaying = isPlaying,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
             // Video.js v10 Sleek Bottom Controls
             AnimatedVisibility(
                 visible = showControls,
-                enter = fadeIn(),
-                exit = fadeOut(),
+                enter = fadeIn(tween(300)),
+                exit = fadeOut(tween(300)),
                 modifier = Modifier.align(Alignment.BottomCenter)
             ) {
                 VideoJsBottomBar(
@@ -162,7 +176,7 @@ fun VideoPlayerScreen(
                         showSettingsSheet = true
                     },
                     onToggleFullscreen = {
-                        // Normally handle orientation or activity immersive mode here
+                        // Custom fullscreen logic can be implemented here
                     },
                     modifier = Modifier.padding(bottom = 32.dp, start = 16.dp, end = 16.dp)
                 )

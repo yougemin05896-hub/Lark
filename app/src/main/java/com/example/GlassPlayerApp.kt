@@ -13,6 +13,7 @@ class GlassPlayerApp : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
+        // Initialize global dependencies, analytics, or logging tools here if needed
         dependencyProvider = DependencyProvider.getInstance(this)
     }
 

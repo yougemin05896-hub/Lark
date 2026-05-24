@@ -4,91 +4,120 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.ui.Modifier
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.presentation.home.HomeScreen
 import com.example.presentation.home.HomeViewModel
+import com.example.presentation.player.PlayerViewModel
 import com.example.presentation.player.VideoPlayerScreen
+import com.example.presentation.player.AudioPlayerScreen
+import com.example.presentation.playlists.PlaylistViewModel
+import com.example.presentation.playlists.PlaylistsScreen
+import com.example.presentation.settings.SettingsScreen
 import com.example.ui.theme.GlassPlayerTheme
 
 class MainActivity : ComponentActivity() {
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    enableEdgeToEdge()
-    val app = applicationContext as GlassPlayerApp
-    
-    setContent {
-      GlassPlayerTheme {
-        val navController = rememberNavController()
-        
-        Scaffold(
-          bottomBar = {
-            NavigationBar {
-              NavigationBarItem(
-                icon = { Text("Home") },
-                selected = false,
-                onClick = { navController.navigate("home") }
-              )
-              NavigationBarItem(
-                icon = { Text("Playlists") },
-                selected = false,
-                onClick = { navController.navigate("playlists") }
-              )
-              NavigationBarItem(
-                icon = { Text("Settings") },
-                selected = false,
-                onClick = { navController.navigate("settings") }
-              )
-            }
-          }
-        ) { innerPadding ->
-          NavHost(navController = navController, startDestination = "home", modifier = Modifier.padding(innerPadding)) {
-            composable("home") {
-              val homeViewModel = remember { HomeViewModel(app.dependencyProvider.localMediaScanner) }
-              HomeScreen(
-                viewModel = homeViewModel,
-                onVideoClick = { mediaItem ->
-                  val encodedUri = android.net.Uri.encode(mediaItem.uri)
-                  if (mediaItem.isVideo) {
-                    navController.navigate("player/$encodedUri")
-                  } else {
-                    navController.navigate("audio/$encodedUri")
-                  }
-                }
-              )
-            }
-            composable("player/{uri}") { backStackEntry ->
-              val uri = backStackEntry.arguments?.getString("uri") ?: ""
-              VideoPlayerScreen(uriString = uri)
-            }
-            composable("audio/{uri}") { backStackEntry ->
-              val uri = backStackEntry.arguments?.getString("uri") ?: ""
-              com.example.presentation.player.AudioPlayerScreen(uriString = uri)
-            }
-            composable("playlists") {
-              val factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                  override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                      return com.example.presentation.playlists.PlaylistViewModel(app.dependencyProvider.playlistRepository) as T
-                  }
-              }
-              val viewModel: com.example.presentation.playlists.PlaylistViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
-              com.example.presentation.playlists.PlaylistsScreen(viewModel = viewModel)
-            }
-            composable("settings") {
-              com.example.presentation.settings.SettingsScreen()
-            }
-          }
-        }
-      }
-    }
-  }
-}
 
+    // Instantiate PlayerViewModel globally at Host level
+    private val playerViewModel: PlayerViewModel by viewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        val app = applicationContext as GlassPlayerApp
+        
+        setContent {
+            GlassPlayerTheme {
+                val navController = rememberNavController()
+                
+                Scaffold(
+                    containerColor = Color.Black,
+                    bottomBar = {
+                        val navBackStackEntry = navController.currentBackStackEntryAsState().value
+                        val currentRoute = navBackStackEntry?.destination?.route ?: "home"
+                        if (currentRoute in listOf("home", "playlists", "settings")) {
+                            com.example.presentation.navigation.LiquidBottomBar(
+                                currentRoute = currentRoute,
+                                onNavigate = { route ->
+                                    navController.navigate(route) {
+                                        navController.graph.startDestinationRoute?.let { startRoute ->
+                                            popUpTo(startRoute) { saveState = true }
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            )
+                        }
+                    }
+                ) { innerPadding ->
+                    NavHost(
+                        navController = navController, 
+                        startDestination = "home", 
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .background(Color.Black)
+                    ) {
+                        composable("home") {
+                            val homeViewModel = remember { HomeViewModel(app.dependencyProvider.localMediaScanner) }
+                            HomeScreen(
+                                viewModel = homeViewModel,
+                                onVideoClick = { mediaItem ->
+                                    val encodedUri = android.net.Uri.encode(mediaItem.uri)
+                                    // Set ViewModel state 
+                                    playerViewModel.loadVideo(mediaItem.uri, mediaItem.title)
+                                    if (mediaItem.isVideo) {
+                                        val intent = android.content.Intent(this@MainActivity, com.example.presentation.player.XmlPlayerActivity::class.java)
+                                        intent.putExtra("VIDEO_URI", mediaItem.uri)
+                                        startActivity(intent)
+                                    } else {
+                                        navController.navigate("audio/$encodedUri")
+                                    }
+                                }
+                            )
+                        }
+                        composable("audio/{uri}") { backStackEntry ->
+                            val uri = backStackEntry.arguments?.getString("uri") ?: ""
+                            AudioPlayerScreen(uriString = uri)
+                        }
+                        composable("playlists") {
+                            val factory = object : ViewModelProvider.Factory {
+                                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                    return PlaylistViewModel(app.dependencyProvider.playlistRepository) as T
+                                }
+                            }
+                            val viewModel: PlaylistViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
+                            PlaylistsScreen(viewModel = viewModel)
+                        }
+                        composable("settings") {
+                            SettingsScreen()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Here we can resume the ExoPlayer if needed, 
+        // usually ExoPlayer handles OS foregrounding internally if configured.
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Prevent background playback leak when closing the app
+        playerViewModel.pause()
+    }
+}

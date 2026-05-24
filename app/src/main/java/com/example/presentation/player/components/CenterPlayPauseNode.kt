@@ -8,6 +8,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
@@ -21,7 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.ui.components.liquidGlass
+import com.example.ui.components.LiquidGlassBox
 import com.example.ui.theme.GlassIcons
 import kotlinx.coroutines.delay
 
@@ -45,19 +46,21 @@ fun CenterPlayPauseNode(
             enter = fadeIn(animationSpec = tween(200)) + scaleIn(initialScale = 0.8f),
             exit = fadeOut(animationSpec = tween(400)) + scaleOut(targetScale = 1.2f)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .liquidGlass(shape = CircleShape)
-                    .background(Color.Black.copy(alpha = 0.3f)),
-                contentAlignment = Alignment.Center
+            LiquidGlassBox(
+                modifier = Modifier.size(80.dp),
+                shape = CircleShape
             ) {
-                Icon(
-                    imageVector = if (isPlaying) GlassIcons.Play else GlassIcons.Pause,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(48.dp)
-                )
+                Box(
+                    modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) GlassIcons.Play else GlassIcons.Pause,
+                        contentDescription = "Play/Pause Indicator",
+                        tint = Color.White,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
             }
         }
     }

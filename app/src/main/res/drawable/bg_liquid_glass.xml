@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Liquid Glass Base Background -->
+    <item>
+        <shape android:shape="rectangle">
+            <!-- Fluid Pill Shape / 2026 iOS Look -->
+            <corners android:radius="24dp" />
+            
+            <!-- Dark AMOLED Translucent Hex -->
+            <solid android:color="#4A000000" />
+            
+            <!-- Crisp Sub-Pixel Glowing White Border -->
+            <stroke 
+                android:width="0.5dp" 
+                android:color="#4DFFFFFF" />
+        </shape>
+    </item>
+</layer-list>

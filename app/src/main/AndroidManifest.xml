@@ -32,6 +32,12 @@
             </intent-filter>
         </activity>
 
+        <activity 
+            android:name=".presentation.player.XmlPlayerActivity" 
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:theme="@style/Theme.MyApplication"
+            android:supportsPictureInPicture="true" />
+
         <service
             android:name=".media.PlaybackService"
             android:foregroundServiceType="mediaPlayback"
