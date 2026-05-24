@@ -91,7 +91,7 @@ dependencies {
   implementation(libs.androidx.media3.session)
   implementation(libs.material)
   implementation(libs.androidx.work.runtime.ktx)
-  implementation("com.github.Dimezis:BlurView:version-1.6.6")
+  // implementation("com.github.Kyant0:AndroidLiquidGlass:main-SNAPSHOT") // Disabled due to Jitpack resolution failure
   implementation(libs.coil.compose)
   implementation(libs.coil.video)
   implementation(libs.converter.moshi)

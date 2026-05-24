@@ -72,8 +72,8 @@
         android:elevation="12dp"
         android:clickable="true"
         android:focusable="true"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintBottom_toTopOf="@+id/compose_bottom_bar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -95,21 +95,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Ultimate Bottom Liquid Bar Overlay (Real Glass) -->
-    <eightbitlab.com.blurview.BlurView
-        android:id="@+id/blur_view"
-        android:layout_width="0dp"
+    <!-- Ultimate Bottom Liquid Bar Overlay (Kyant0 Liquid Glass) -->
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/compose_bottom_bar"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <include
-            android:id="@+id/bottom_controls_bar"
-            layout="@layout/layout_player_controls"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-    </eightbitlab.com.blurview.BlurView>
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

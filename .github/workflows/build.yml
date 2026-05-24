@@ -23,6 +23,7 @@ jobs:
     - name: Ensure valid Gradle Wrapper
       run: gradle wrapper
 
+    # JitPack is resolved internally by Gradle configs
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 

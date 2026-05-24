@@ -12,22 +12,41 @@ import android.view.MotionEvent
 import android.util.Rational
 import android.view.View
 import android.widget.ImageView
-import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.example.R
-import eightbitlab.com.blurview.BlurView
-import eightbitlab.com.blurview.RenderScriptBlur
-import android.view.ViewGroup
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import android.graphics.RenderEffect
+import android.graphics.Shader
 import kotlinx.coroutines.*
 import kotlin.math.abs
+
+fun Modifier.liquidGlass(): Modifier = this.graphicsLayer {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        renderEffect = RenderEffect.createBlurEffect(150f, 150f, Shader.TileMode.MIRROR).asComposeRenderEffect()
+    }
+    alpha = 0.8f
+    clip = true
+}.background(Color.White.copy(alpha = 0.1f))
 
 class XmlPlayerActivity : AppCompatActivity() {
 
@@ -35,19 +54,20 @@ class XmlPlayerActivity : AppCompatActivity() {
     private lateinit var playerView: PlayerView
     private lateinit var btnCenterPlayPause: ImageView
     private lateinit var btnSmallPlayPause: ImageView
-    private lateinit var tvTime: TextView
-    private lateinit var timeline: SeekBar
     private lateinit var tvGestureFeedback: TextView
     
     // UI Panels for Auto-Hide
     private lateinit var gradientOverlay: View
-    private lateinit var blurView: BlurView
-    private lateinit var bottomControls: View
+    private lateinit var composeBottomBar: ComposeView
     private lateinit var btnLockScreen: ImageView
     private lateinit var btnSpeedFloat: ImageView
 
-    private var isPlaying = true
-    private var controlsVisible = true
+    private var isPlaying by mutableStateOf(true)
+    private var controlsVisible by mutableStateOf(true)
+    
+    // Compose states for timeline
+    private var currentPositionMs by mutableLongStateOf(0L)
+    private var totalDurationMs by mutableLongStateOf(0L)
 
     // Gestures
     private lateinit var gestureDetector: GestureDetector
@@ -78,7 +98,7 @@ class XmlPlayerActivity : AppCompatActivity() {
         val uriString = intent.getStringExtra("VIDEO_URI") ?: ""
 
         bindViews()
-        initializeBlurView()
+        initializeComposeBottomBar()
         initializePlayer(uriString)
         setupGestures()
         setupClickListeners()
@@ -110,28 +130,59 @@ class XmlPlayerActivity : AppCompatActivity() {
     private fun bindViews() {
         playerView = findViewById(R.id.player_view)
         btnCenterPlayPause = findViewById(R.id.btn_center_play_pause)
-        btnSmallPlayPause = findViewById(R.id.btn_small_play_pause)
-        tvTime = findViewById(R.id.tv_time)
-        timeline = findViewById(R.id.player_timeline)
+        // btnSmallPlayPause = findViewById(R.id.btn_small_play_pause)
+        tvGestureFeedback = findViewById(R.id.tv_gesture_feedback)
         gradientOverlay = findViewById(R.id.gradient_overlay)
-        blurView = findViewById(R.id.blur_view)
-        bottomControls = findViewById(R.id.bottom_controls_bar)
+        composeBottomBar = findViewById(R.id.compose_bottom_bar)
         btnLockScreen = findViewById(R.id.btn_lock_screen)
         btnSpeedFloat = findViewById(R.id.btn_speed_float)
-        tvGestureFeedback = findViewById(R.id.tv_gesture_feedback)
     }
 
-    private fun initializeBlurView() {
-        val radius = 15f
-        val decorView = window.decorView
-        val rootView = decorView.findViewById<ViewGroup>(android.R.id.content)
-        val windowBackground = decorView.background
-
-        if (rootView != null) {
-            blurView.setupWith(rootView)
-                .setBlurAlgorithm(RenderScriptBlur(this))
-                .setFrameClearDrawable(windowBackground)
-                .setBlurRadius(radius)
+    private fun initializeComposeBottomBar() {
+        composeBottomBar.setContent {
+            if (controlsVisible) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .liquidGlass() // Kyant0 Liquid Glass effect
+                        .padding(horizontal = 24.dp, vertical = 32.dp)
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = formatTime(currentPositionMs),
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                            Slider(
+                                value = currentPositionMs.toFloat(),
+                                onValueChange = { 
+                                    currentPositionMs = it.toLong()
+                                    player?.seekTo(currentPositionMs)
+                                },
+                                valueRange = 0f..totalDurationMs.toFloat().coerceAtLeast(1f),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 16.dp),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = Color.White,
+                                    activeTrackColor = Color.White,
+                                    inactiveTrackColor = Color.White.copy(alpha = 0.3f)
+                                )
+                            )
+                            Text(
+                                text = formatTime(totalDurationMs),
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -254,36 +305,43 @@ class XmlPlayerActivity : AppCompatActivity() {
     }
 
     private fun initializePlayer(uriString: String) {
-        if(uriString.isEmpty()) return
-
-        player = ExoPlayer.Builder(this).build().apply {
-            setMediaItem(MediaItem.fromUri(Uri.parse(uriString)))
-            prepare()
-            playWhenReady = true
+        if(uriString.isEmpty()) {
+            Toast.makeText(this, "Empty video URI", Toast.LENGTH_SHORT).show()
+            return
         }
-        playerView.player = player
 
-        player?.addListener(object : Player.Listener {
-            override fun onIsPlayingChanged(isPlayingState: Boolean) {
-                isPlaying = isPlayingState
-                updatePlayPauseUI()
-                
-                if (isPlayingState) {
-                    startProgressTracker()
-                    scheduleHideControls()
-                } else {
-                    stopProgressTracker()
-                    showControls() // Keep controls visible when paused
-                    hideControlsJob?.cancel()
-                }
+        try {
+            val validUri = Uri.parse(uriString)
+            player = ExoPlayer.Builder(this).build().apply {
+                setMediaItem(MediaItem.fromUri(validUri))
+                prepare()
+                playWhenReady = true
             }
-        })
+            playerView.player = player
+
+            player?.addListener(object : Player.Listener {
+                override fun onIsPlayingChanged(isPlayingState: Boolean) {
+                    isPlaying = isPlayingState
+                    updatePlayPauseUI()
+                    
+                    if (isPlayingState) {
+                        startProgressTracker()
+                        scheduleHideControls()
+                    } else {
+                        stopProgressTracker()
+                        showControls() // Keep controls visible when paused
+                        hideControlsJob?.cancel()
+                    }
+                }
+            })
+        } catch (e: Exception) {
+            Toast.makeText(this, "Failed to load local media: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun updatePlayPauseUI() {
         val iconRes = if (isPlaying) R.drawable.ic_pause_massive else R.drawable.ic_play_massive
         btnCenterPlayPause.setImageResource(iconRes)
-        btnSmallPlayPause.setImageResource(iconRes)
     }
 
     private fun togglePlayPause() {
@@ -296,10 +354,6 @@ class XmlPlayerActivity : AppCompatActivity() {
 
     private fun setupClickListeners() {
         btnCenterPlayPause.setOnClickListener { 
-            togglePlayPause() 
-            scheduleHideControls()
-        }
-        btnSmallPlayPause.setOnClickListener { 
             togglePlayPause() 
             scheduleHideControls()
         }
@@ -318,7 +372,6 @@ class XmlPlayerActivity : AppCompatActivity() {
     private fun showControls() {
         controlsVisible = true
         gradientOverlay.visibility = View.VISIBLE
-        blurView.visibility = View.VISIBLE
         btnCenterPlayPause.visibility = View.VISIBLE
         btnLockScreen.visibility = View.VISIBLE
         btnSpeedFloat.visibility = View.VISIBLE
@@ -327,7 +380,6 @@ class XmlPlayerActivity : AppCompatActivity() {
     private fun hideControls() {
         controlsVisible = false
         gradientOverlay.visibility = View.GONE
-        blurView.visibility = View.GONE
         btnCenterPlayPause.visibility = View.GONE
         btnLockScreen.visibility = View.GONE
         btnSpeedFloat.visibility = View.GONE
@@ -348,13 +400,8 @@ class XmlPlayerActivity : AppCompatActivity() {
         progressJob = scope.launch {
             while (isActive) {
                 player?.let { p ->
-                    val currentPos = p.currentPosition
-                    val duration = p.duration.coerceAtLeast(0)
-                    if (duration > 0) {
-                        timeline.max = duration.toInt()
-                        timeline.progress = currentPos.toInt()
-                        tvTime.text = "${formatTime(currentPos)} / ${formatTime(duration)}"
-                    }
+                    currentPositionMs = p.currentPosition
+                    totalDurationMs = p.duration.coerceAtLeast(0)
                 }
                 delay(500)
             }

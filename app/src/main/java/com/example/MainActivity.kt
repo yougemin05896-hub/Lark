@@ -78,9 +78,13 @@ class MainActivity : ComponentActivity() {
                                     // Set ViewModel state 
                                     playerViewModel.loadVideo(mediaItem.uri, mediaItem.title)
                                     if (mediaItem.isVideo) {
-                                        val intent = android.content.Intent(this@MainActivity, com.example.presentation.player.XmlPlayerActivity::class.java)
-                                        intent.putExtra("VIDEO_URI", mediaItem.uri)
-                                        startActivity(intent)
+                                        try {
+                                            val intent = android.content.Intent(this@MainActivity, com.example.presentation.player.XmlPlayerActivity::class.java)
+                                            intent.putExtra("VIDEO_URI", mediaItem.uri)
+                                            startActivity(intent)
+                                        } catch (e: Exception) {
+                                            android.widget.Toast.makeText(this@MainActivity, "Failed to open video", android.widget.Toast.LENGTH_SHORT).show()
+                                        }
                                     } else {
                                         navController.navigate("audio/$encodedUri")
                                     }
