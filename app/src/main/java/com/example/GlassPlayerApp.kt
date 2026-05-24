@@ -1,9 +1,12 @@
 package com.example
 
 import android.app.Application
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import coil.decode.VideoFrameDecoder
 import com.example.di.DependencyProvider
 
-class GlassPlayerApp : Application() {
+class GlassPlayerApp : Application(), ImageLoaderFactory {
 
     lateinit var dependencyProvider: DependencyProvider
         private set
@@ -11,5 +14,13 @@ class GlassPlayerApp : Application() {
     override fun onCreate() {
         super.onCreate()
         dependencyProvider = DependencyProvider.getInstance(this)
+    }
+
+    override fun newImageLoader(): ImageLoader {
+        return ImageLoader.Builder(this)
+            .components {
+                add(VideoFrameDecoder.Factory())
+            }
+            .build()
     }
 }

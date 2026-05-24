@@ -10,7 +10,9 @@ data class MediaItem(
     val id: Long,
     val title: String,
     val uri: String,
-    val isVideo: Boolean
+    val isVideo: Boolean,
+    val durationMs: Long = 0L,
+    val sizeBytes: Long = 0L
 )
 
 class LocalMediaScanner(private val context: Context) {
@@ -19,7 +21,9 @@ class LocalMediaScanner(private val context: Context) {
         val projection = arrayOf(
             MediaStore.MediaColumns._ID,
             MediaStore.MediaColumns.DISPLAY_NAME,
-            MediaStore.MediaColumns.MIME_TYPE
+            MediaStore.MediaColumns.MIME_TYPE,
+            MediaStore.MediaColumns.DURATION,
+            MediaStore.MediaColumns.SIZE
         )
         
         // Scan Videos
@@ -27,10 +31,15 @@ class LocalMediaScanner(private val context: Context) {
         context.contentResolver.query(videoUri, projection, null, null, "${MediaStore.MediaColumns.DATE_ADDED} DESC")?.use { cursor ->
             val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
             val nameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
+            val durCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DURATION)
+            val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+            
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idCol)
                 val uri = ContentUris.withAppendedId(videoUri, id).toString()
-                mediaList.add(MediaItem(id, cursor.getString(nameCol), uri, true))
+                val duration = cursor.getLong(durCol)
+                val size = cursor.getLong(sizeCol)
+                mediaList.add(MediaItem(id, cursor.getString(nameCol) ?: "Unknown", uri, true, duration, size))
             }
         }
         
@@ -39,11 +48,15 @@ class LocalMediaScanner(private val context: Context) {
         context.contentResolver.query(audioUri, projection, null, null, null)?.use { cursor ->
             val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
             val nameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
+            val durCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DURATION)
+            val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
             var count = 0
             while (cursor.moveToNext() && count < 50) {
                 val id = cursor.getLong(idCol)
                 val uri = ContentUris.withAppendedId(audioUri, id).toString()
-                mediaList.add(MediaItem(id, cursor.getString(nameCol), uri, false))
+                val duration = cursor.getLong(durCol)
+                val size = cursor.getLong(sizeCol)
+                mediaList.add(MediaItem(id, cursor.getString(nameCol) ?: "Unknown Audio", uri, false, duration, size))
                 count++
             }
         }

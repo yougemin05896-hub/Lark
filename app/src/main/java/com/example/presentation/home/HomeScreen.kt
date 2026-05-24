@@ -4,21 +4,20 @@ import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.domain.repository.MediaItem
-import com.example.ui.components.iosGlass
-import com.example.ui.theme.IosGlassDark
+import com.example.presentation.home.components.VideoItem
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
@@ -50,7 +49,17 @@ fun HomeScreen(
         }
     }
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Lark Video", fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        },
+        modifier = Modifier.fillMaxSize()
+    ) { innerPadding ->
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -60,39 +69,17 @@ fun HomeScreen(
                 Text(text = "No media found", modifier = Modifier.testTag("empty_state_text"))
             }
         } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 150.dp),
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(vertical = 8.dp)
             ) {
-                items(mediaList, key = { it.id }) { item ->
-                    MediaCard(item = item, onClick = { onVideoClick(item) })
+                items(mediaList.filter { it.isVideo }, key = { it.id }) { item ->
+                    VideoItem(item = item, onClick = { onVideoClick(item) })
                 }
             }
         }
     }
 }
 
-@Composable
-fun MediaCard(item: MediaItem, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(100.dp)
-            .clickable { onClick() }
-            .testTag("media_card_${item.id}"),
-        colors = CardDefaults.cardColors(containerColor = IosGlassDark)
-    ) {
-        Box(modifier = Modifier.fillMaxSize().padding(8.dp).iosGlass(darkTheme = true), contentAlignment = Alignment.Center) {
-            Text(
-                text = item.title,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2
-            )
-        }
-    }
-}

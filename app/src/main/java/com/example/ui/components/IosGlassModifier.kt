@@ -1,31 +1,43 @@
 package com.example.ui.components
 
-import android.os.Build
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.IosGlassDark
 import com.example.ui.theme.IosGlassLight
 
 /**
- * Simulates Apple's frosted glass.
+ * True Apple Frosted Glass math for Jetpack Compose.
+ * Blurs the background content (requires drawing the modifier over existing content),
+ * applies a translucent color layer, and a subtle reflective white border.
  */
 @Composable
 fun Modifier.iosGlass(
-    blurRadius: Dp = 16.dp,
-    darkTheme: Boolean = isSystemInDarkTheme()
+    blurRadius: Dp = 20.dp,
+    shape: Shape = RoundedCornerShape(16.dp),
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    alpha: Float = 0.5f // Controls intensity of the glass tint
 ): Modifier {
-    val glassColor = if (darkTheme) IosGlassDark else IosGlassLight
-    
-    // In Compose, blur applies to the content itself rather than the background behind it
-    // unless using advanced RenderNode/RenderEffect setup on a floating window.
-    // For general UI, we fake it with a translucent background and simple blur if needed.
-    // To properly blur background in standard Jetpack Compose Android, we often need Haze or RenderEffect.
-    // We will keep this simple and performant using standard background translucency.
-    return this.background(glassColor)
+    val glassColor = if (darkTheme) {
+        Color(0xFF2A2A2E).copy(alpha = alpha) // Darker variant for Lark-style dark mode
+    } else {
+        Color(0xFFF9F9F9).copy(alpha = alpha)
+    }
+
+    val borderLight = Color.White.copy(alpha = 0.15f)
+
+    return this
+        .clip(shape) // Clip before blurring to ensure sharp edges
+        .blur(blurRadius)
+        .background(glassColor)
+        .border(0.5.dp, borderLight, shape)
 }
