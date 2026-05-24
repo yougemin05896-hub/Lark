@@ -33,8 +33,9 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import com.skydoves.cloudy.cloudy
 
-class ComposePlayerActivity : androidx.appcompat.app.AppCompatActivity() {
+class ComposePlayerActivity : ComponentActivity() {
 
     private var player: ExoPlayer? = null
 
@@ -89,7 +90,6 @@ class ComposePlayerActivity : androidx.appcompat.app.AppCompatActivity() {
 @Composable
 fun GlassPlayerUI(player: ExoPlayer?) {
     Box(Modifier.fillMaxSize()) {
-        val backdrop = rememberLayerBackdrop()
 
         // 1. THE MEDIA3 PLAYER SURFACE
         AndroidView(
@@ -99,7 +99,7 @@ fun GlassPlayerUI(player: ExoPlayer?) {
                     this.player = player
                 }
             },
-            modifier = Modifier.layerBackdrop(backdrop)
+            modifier = Modifier.fillMaxSize()
         )
 
         // 2. THE DYNAMIC FULL-WIDTH DARK GLASS BOTTOM BAR
@@ -108,17 +108,8 @@ fun GlassPlayerUI(player: ExoPlayer?) {
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 16.dp, start = 16.dp, end = 16.dp)
-                .drawBackdrop(
-                    backdrop = backdrop,
-                    shape = { RoundedCornerShape(32.dp) },
-                    effects = {
-                        vibrancy() // Saturation 1.5
-                        blur(20f)
-                        lens(16f, 32f)
-                    },
-                    // DARK GLASS: Combine Black alpha with Palette API vibrant/dominant color
-                    onDrawSurface = { drawRect(Color.Black.copy(alpha = 0.4f)) }
-                )
+                .cloudy(radius = 25)
+                .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(32.dp))
                 .height(80.dp)
         ) {
             var selectedIndex by remember { mutableIntStateOf(1) }

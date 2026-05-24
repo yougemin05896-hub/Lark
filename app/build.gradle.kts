@@ -92,7 +92,7 @@ dependencies {
   implementation(libs.material)
   implementation(libs.androidx.work.runtime.ktx)
   implementation("androidx.palette:palette-ktx:1.0.0")
-  // implementation("com.github.Kyant0:AndroidLiquidGlass:main-SNAPSHOT") // Disabled due to Jitpack resolution failure
+  implementation("com.github.skydoves:cloudy:0.2.3")
   implementation(libs.coil.compose)
   implementation(libs.coil.video)
   implementation(libs.converter.moshi)

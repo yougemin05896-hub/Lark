@@ -17,6 +17,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.skydoves.cloudy.cloudy
 import com.example.ui.components.LiquidGlassBox
 import com.example.ui.theme.GlassIcons
 import kotlin.math.roundToInt
@@ -89,12 +90,9 @@ fun LiquidBottomBar(
         contentAlignment = Alignment.Center
     ) {
         // The Sleek Glass Container Base
-        LiquidGlassBox(
-            modifier = Modifier.fillMaxSize(),
-            shape = CircleShape
-        ) {
-            // Unused block, liquid glass box renders the blurred background implicitly
-        }
+        Box(
+            modifier = Modifier.fillMaxSize().cloudy(radius = 25).background(Color.Black.copy(alpha = 0.5f), CircleShape)
+        )
         
         // The Float/Snap Liquid Capsule Indicator over the Glass
         if (itemPositions.isNotEmpty() && itemPositions[selectedIndex] > 0f) {
