@@ -23,6 +23,9 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.example.R
+import eightbitlab.com.blurview.BlurView
+import eightbitlab.com.blurview.RenderScriptBlur
+import android.view.ViewGroup
 import kotlinx.coroutines.*
 import kotlin.math.abs
 
@@ -38,6 +41,7 @@ class XmlPlayerActivity : AppCompatActivity() {
     
     // UI Panels for Auto-Hide
     private lateinit var gradientOverlay: View
+    private lateinit var blurView: BlurView
     private lateinit var bottomControls: View
     private lateinit var btnLockScreen: ImageView
     private lateinit var btnSpeedFloat: ImageView
@@ -74,6 +78,7 @@ class XmlPlayerActivity : AppCompatActivity() {
         val uriString = intent.getStringExtra("VIDEO_URI") ?: ""
 
         bindViews()
+        initializeBlurView()
         initializePlayer(uriString)
         setupGestures()
         setupClickListeners()
@@ -109,10 +114,25 @@ class XmlPlayerActivity : AppCompatActivity() {
         tvTime = findViewById(R.id.tv_time)
         timeline = findViewById(R.id.player_timeline)
         gradientOverlay = findViewById(R.id.gradient_overlay)
+        blurView = findViewById(R.id.blur_view)
         bottomControls = findViewById(R.id.bottom_controls_bar)
         btnLockScreen = findViewById(R.id.btn_lock_screen)
         btnSpeedFloat = findViewById(R.id.btn_speed_float)
         tvGestureFeedback = findViewById(R.id.tv_gesture_feedback)
+    }
+
+    private fun initializeBlurView() {
+        val radius = 15f
+        val decorView = window.decorView
+        val rootView = decorView.findViewById<ViewGroup>(android.R.id.content)
+        val windowBackground = decorView.background
+
+        if (rootView != null) {
+            blurView.setupWith(rootView)
+                .setBlurAlgorithm(RenderScriptBlur(this))
+                .setFrameClearDrawable(windowBackground)
+                .setBlurRadius(radius)
+        }
     }
 
     private fun setupGestures() {
@@ -298,7 +318,7 @@ class XmlPlayerActivity : AppCompatActivity() {
     private fun showControls() {
         controlsVisible = true
         gradientOverlay.visibility = View.VISIBLE
-        bottomControls.visibility = View.VISIBLE
+        blurView.visibility = View.VISIBLE
         btnCenterPlayPause.visibility = View.VISIBLE
         btnLockScreen.visibility = View.VISIBLE
         btnSpeedFloat.visibility = View.VISIBLE
@@ -307,7 +327,7 @@ class XmlPlayerActivity : AppCompatActivity() {
     private fun hideControls() {
         controlsVisible = false
         gradientOverlay.visibility = View.GONE
-        bottomControls.visibility = View.GONE
+        blurView.visibility = View.GONE
         btnCenterPlayPause.visibility = View.GONE
         btnLockScreen.visibility = View.GONE
         btnSpeedFloat.visibility = View.GONE

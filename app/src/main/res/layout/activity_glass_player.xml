@@ -9,18 +9,17 @@
     android:background="#000000">
 
     <!-- Absolute Bottom Layer: The ExoPlayer Surface -->
-    <!-- It must be completely isolated from the foreground -->
     <androidx.media3.ui.PlayerView
         android:id="@+id/player_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:use_controller="false"
+        app:surface_type="texture_view"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Dark Gradient Overlay: Enhances contrast for the Glass UI elements -->
     <View
         android:id="@+id/gradient_overlay"
         android:layout_width="0dp"
@@ -96,15 +95,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Ultimate Bottom Liquid Bar Overlay -->
-    <include
-        android:id="@+id/bottom_controls_bar"
-        layout="@layout/layout_player_controls"
+    <!-- Ultimate Bottom Liquid Bar Overlay (Real Glass) -->
+    <eightbitlab.com.blurview.BlurView
+        android:id="@+id/blur_view"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="32dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <include
+            android:id="@+id/bottom_controls_bar"
+            layout="@layout/layout_player_controls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </eightbitlab.com.blurview.BlurView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
