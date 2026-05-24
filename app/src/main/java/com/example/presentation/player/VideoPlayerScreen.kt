@@ -24,8 +24,9 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
-import com.example.presentation.player.components.FloatingPlayerTools
-import com.example.presentation.player.components.PlayerControlsOverlay
+import com.example.presentation.player.components.CenterPlayPauseNode
+import com.example.presentation.player.components.VideoJsBottomBar
+import com.example.presentation.settings.PlayerSettingsBottomSheet
 import kotlinx.coroutines.delay
 
 @Composable
@@ -36,11 +37,13 @@ fun VideoPlayerScreen(
     val context = LocalContext.current
     var isPlaying by remember { mutableStateOf(true) }
     var showControls by remember { mutableStateOf(true) }
-    var isLocked by remember { mutableStateOf(false) }
+    var isMuted by remember { mutableStateOf(false) }
     var playbackSpeed by remember { mutableStateOf(1.0f) }
     
     var currentTime by remember { mutableStateOf(0L) }
     var totalTime by remember { mutableStateOf(0L) }
+
+    var showSettingsSheet by remember { mutableStateOf(false) }
 
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
@@ -51,7 +54,6 @@ fun VideoPlayerScreen(
         }
     }
 
-    // Connect state to ExoPlayer
     DisposableEffect(Unit) {
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(isPlayingState: Boolean) {
@@ -72,17 +74,15 @@ fun VideoPlayerScreen(
         }
     }
 
-    // Auto update current time
     LaunchedEffect(isPlaying, showControls) {
         while (showControls) {
             currentTime = exoPlayer.currentPosition
-            delay(1000)
+            delay(16) // Smooth 60fps slider updates
         }
     }
 
-    // Auto-hide controls timer
-    LaunchedEffect(showControls, isPlaying) {
-        if (showControls && isPlaying && !isLocked) {
+    LaunchedEffect(showControls, isPlaying, showSettingsSheet) {
+        if (showControls && isPlaying && !showSettingsSheet) {
             delay(3500)
             showControls = false
         }
@@ -105,23 +105,22 @@ fun VideoPlayerScreen(
                     showControls = !showControls
                 }
         ) {
-            // 1. AndroidView for ExoPlayer Surface
             AndroidView(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
                         player = exoPlayer
-                        useController = false // Completely custom UI
+                        useController = false 
                     }
                 },
                 modifier = Modifier.fillMaxSize()
             )
             
-            // 2. AI Subtitle Overlay
+            // Subtitles
             if (currentCaption.isNotEmpty()) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = if (showControls) 140.dp else 40.dp)
+                        .padding(bottom = if (showControls) 120.dp else 40.dp)
                         .background(Color(0x88000000))
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
@@ -129,49 +128,55 @@ fun VideoPlayerScreen(
                 }
             }
 
-            // 3. UI Overlays (Animated)
+            // Big Center Play/Pause Indicator (Fades out automatically)
+            CenterPlayPauseNode(
+                isPlaying = isPlaying,
+                modifier = Modifier.align(Alignment.Center)
+            )
+
+            // Video.js v10 Sleek Bottom Controls
             AnimatedVisibility(
                 visible = showControls,
                 enter = fadeIn(),
                 exit = fadeOut(),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.align(Alignment.BottomCenter)
             ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    
-                    // Floating Tools (Top-ish)
-                    FloatingPlayerTools(
-                        isLocked = isLocked,
-                        onToggleLock = { isLocked = !isLocked },
-                        onToggleSpeed = {
-                            playbackSpeed = if (playbackSpeed == 1.0f) 1.5f else if (playbackSpeed == 1.5f) 2.0f else 1.0f
-                            exoPlayer.setPlaybackSpeed(playbackSpeed)
-                        },
-                        speedMultiplier = playbackSpeed,
-                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 24.dp) // adjusted for insets
-                    )
-                    
-                    // Bottom Glass Controls
-                    if (!isLocked) {
-                        PlayerControlsOverlay(
-                            isPlaying = isPlaying,
-                            currentTimeMs = currentTime,
-                            totalTimeMs = totalTime,
-                            onPlayPause = {
-                                if (isPlaying) exoPlayer.pause() else exoPlayer.play()
-                            },
-                            onSeek = { fraction ->
-                                val targetPos = (totalTime * fraction).toLong()
-                                exoPlayer.seekTo(targetPos)
-                                currentTime = targetPos
-                            },
-                            onNext = { /* Navigate to next item theoretically */ },
-                            onPrevious = { exoPlayer.seekTo(0) },
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 32.dp, start = 16.dp, end = 16.dp)
-                        )
+                VideoJsBottomBar(
+                    isPlaying = isPlaying,
+                    currentTimeMs = currentTime,
+                    totalTimeMs = totalTime,
+                    isMuted = isMuted,
+                    onPlayPause = {
+                        if (isPlaying) exoPlayer.pause() else exoPlayer.play()
+                    },
+                    onSeek = { fraction ->
+                        val targetPos = (totalTime * fraction).toLong()
+                        exoPlayer.seekTo(targetPos)
+                        currentTime = targetPos
+                    },
+                    onToggleMute = {
+                        isMuted = !isMuted
+                        exoPlayer.volume = if (isMuted) 0f else 1f
+                    },
+                    onOpenSettings = {
+                        showSettingsSheet = true
+                    },
+                    onToggleFullscreen = {
+                        // Normally handle orientation or activity immersive mode here
+                    },
+                    modifier = Modifier.padding(bottom = 32.dp, start = 16.dp, end = 16.dp)
+                )
+            }
+
+            if (showSettingsSheet) {
+                PlayerSettingsBottomSheet(
+                    onDismiss = { showSettingsSheet = false },
+                    currentSpeed = playbackSpeed,
+                    onSpeedSelected = { speed ->
+                        playbackSpeed = speed
+                        exoPlayer.setPlaybackSpeed(speed)
                     }
-                }
+                )
             }
         }
     }
