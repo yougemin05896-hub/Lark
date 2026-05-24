@@ -33,7 +33,7 @@
         </activity>
 
         <activity 
-            android:name=".presentation.player.XmlPlayerActivity" 
+            android:name=".presentation.player.ComposePlayerActivity" 
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:resizeableActivity="true"
             android:theme="@style/Theme.MyApplication"

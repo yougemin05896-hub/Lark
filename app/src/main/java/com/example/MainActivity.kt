@@ -75,17 +75,19 @@ class MainActivity : ComponentActivity() {
                                 viewModel = homeViewModel,
                                 onVideoClick = { mediaItem ->
                                     val encodedUri = android.net.Uri.encode(mediaItem.uri)
-                                    // Set ViewModel state 
-                                    playerViewModel.loadVideo(mediaItem.uri, mediaItem.title)
                                     if (mediaItem.isVideo) {
+                                        // Pause any background audio
+                                        playerViewModel.pause()
+                                        // Skip background ViewModel for videos, ComposePlayerActivity handles its own ExoPlayer
                                         try {
-                                            val intent = android.content.Intent(this@MainActivity, com.example.presentation.player.XmlPlayerActivity::class.java)
+                                            val intent = android.content.Intent(this@MainActivity, com.example.presentation.player.ComposePlayerActivity::class.java)
                                             intent.putExtra("VIDEO_URI", mediaItem.uri)
                                             startActivity(intent)
                                         } catch (e: Exception) {
                                             android.widget.Toast.makeText(this@MainActivity, "Failed to open video", android.widget.Toast.LENGTH_SHORT).show()
                                         }
                                     } else {
+                                        playerViewModel.loadVideo(mediaItem.uri, mediaItem.title)
                                         navController.navigate("audio/$encodedUri")
                                     }
                                 }

@@ -91,6 +91,7 @@ dependencies {
   implementation(libs.androidx.media3.session)
   implementation(libs.material)
   implementation(libs.androidx.work.runtime.ktx)
+  implementation("androidx.palette:palette-ktx:1.0.0")
   // implementation("com.github.Kyant0:AndroidLiquidGlass:main-SNAPSHOT") // Disabled due to Jitpack resolution failure
   implementation(libs.coil.compose)
   implementation(libs.coil.video)
