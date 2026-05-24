@@ -1,0 +1,6 @@
+{
+  "name": "GlassPlayer",
+  "description": "An elite iOS Liquid Glass video and audio player with Media3 and AI auto-captions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
