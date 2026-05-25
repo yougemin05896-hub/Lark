@@ -7,17 +7,22 @@ plugins {
 }
 
 android {
-  namespace = "com.example"
+  namespace = "com.aistudio.glassplayer.plzmwq"
   compileSdk = 36
 
   defaultConfig {
     applicationId = "com.aistudio.glassplayer.plzmwq"
-    minSdk = 24
+    minSdk = 26
     targetSdk = 36
     versionCode = 1
-    versionName = "1.0"
+    versionName = "1.0-Enterprise"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    // دعم الأيقونات عالية الدقة للـ UI الزجاجي
+    vectorDrawables {
+      useSupportLibrary = true
+    }
   }
 
   signingConfigs {
@@ -40,37 +45,37 @@ android {
     debug {
     }
   }
+  
+  // 🚀 التحديث الأهم: ترقية بيئة العمل لأحدث معمارية (Java 21)
   compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
   }
+  
+  kotlinOptions {
+    jvmTarget = "21"
+  }
+
   buildFeatures {
     compose = true
     buildConfig = true
   }
+  
   testOptions { unitTests { isIncludeAndroidResources = true } }
 }
 
-// Configure the Secrets Gradle Plugin to use .env and .env.example files
-// to match the convention used in Web projects.
 secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
 }
 
-// Some unused dependencies are commented out below instead of being removed.
-// This makes it easy to add them back in the future if needed.
 dependencies {
   implementation("androidx.appcompat:appcompat:1.6.1")
   implementation("androidx.constraintlayout:constraintlayout:2.1.4")
   implementation(platform(libs.androidx.compose.bom))
   implementation(platform(libs.firebase.bom))
-  // implementation(libs.accompanist.permissions)
+  
   implementation(libs.androidx.activity.compose)
-  // implementation(libs.androidx.camera.camera2)
-  // implementation(libs.androidx.camera.core)
-  // implementation(libs.androidx.camera.lifecycle)
-  // implementation(libs.androidx.camera.view)
   implementation(libs.androidx.compose.material.icons.core)
   implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.compose.material3)
@@ -79,31 +84,38 @@ dependencies {
   implementation(libs.androidx.compose.ui.graphics)
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.core.ktx)
-  // implementation(libs.androidx.datastore.preferences)
+  
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
   implementation(libs.androidx.navigation.compose)
+  
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
+  
+  // ExoPlayer (المشغل الأساسي)
   implementation(libs.androidx.media3.exoplayer)
   implementation(libs.androidx.media3.ui)
   implementation(libs.androidx.media3.session)
+  
   implementation(libs.material)
   implementation(libs.androidx.work.runtime.ktx)
+  
+  // 🚀 أحدث إصدارات الزجاج واستخراج الألوان (2026)
   implementation("androidx.palette:palette-ktx:1.0.0")
-  implementation("com.github.skydoves:cloudy:0.2.3")
+  implementation("com.github.skydoves:cloudy:0.5.0") // الإصدار الأحدث والأكثر استقراراً
+  
   implementation(libs.coil.compose)
   implementation(libs.coil.video)
   implementation(libs.converter.moshi)
-  // implementation(libs.firebase.ai)
+  
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.logging.interceptor)
   implementation(libs.moshi.kotlin)
   implementation(libs.okhttp)
-  // implementation(libs.play.services.location)
   implementation(libs.retrofit)
+  
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)
@@ -113,6 +125,7 @@ dependencies {
   testImplementation(libs.roborazzi)
   testImplementation(libs.roborazzi.compose)
   testImplementation(libs.roborazzi.junit.rule)
+  
   androidTestImplementation(platform(libs.androidx.compose.bom))
   androidTestImplementation(libs.androidx.compose.ui.test.junit4)
   androidTestImplementation(libs.androidx.espresso.core)
@@ -120,6 +133,7 @@ dependencies {
   androidTestImplementation(libs.androidx.runner)
   debugImplementation(libs.androidx.compose.ui.test.manifest)
   debugImplementation(libs.androidx.compose.ui.tooling)
+  
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
 }
