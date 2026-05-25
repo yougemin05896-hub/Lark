@@ -19,10 +19,11 @@ dependencyResolutionManagement {
   repositories {
     google()
     mavenCentral()
-    maven { url = uri("https://jitpack.io") }
+    maven { url = uri("https://jitpack.io") } // ضروري جداً لـ Skydoves Cloudy
   }
 }
 
-rootProject.name = "My Application"
+// تم تعديل الاسم ليتناسب مع التطبيق
+rootProject.name = "GlassPlayer"
 
 include(":app")
