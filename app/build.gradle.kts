@@ -1,5 +1,6 @@
 plugins {
   alias(libs.plugins.android.application)
+  id("org.jetbrains.kotlin.android") // السطر ده كان ناقص عشان يفهم الـ kotlinOptions
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.google.devtools.ksp)
   alias(libs.plugins.roborazzi)
@@ -19,7 +20,6 @@ android {
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-    // دعم الأيقونات عالية الدقة للـ UI الزجاجي
     vectorDrawables {
       useSupportLibrary = true
     }
@@ -46,22 +46,25 @@ android {
     }
   }
   
-  // 🚀 التحديث الأهم: ترقية بيئة العمل لأحدث معمارية (Java 21)
+  // خليناها 17 عشان تتوافق 100% مع سيرفرات GitHub Actions بتاعتك
   compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
   }
   
-  kotlinOptions {
-    jvmTarget = "21"
-  }
-
   buildFeatures {
     compose = true
     buildConfig = true
   }
   
   testOptions { unitTests { isIncludeAndroidResources = true } }
+}
+
+// الحل الجذري والحديث لتعريف إصدار الكوتلن بدون أي أخطاء
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 }
 
 secrets {
@@ -93,7 +96,7 @@ dependencies {
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
   
-  // ExoPlayer (المشغل الأساسي)
+  // ExoPlayer
   implementation(libs.androidx.media3.exoplayer)
   implementation(libs.androidx.media3.ui)
   implementation(libs.androidx.media3.session)
@@ -101,9 +104,9 @@ dependencies {
   implementation(libs.material)
   implementation(libs.androidx.work.runtime.ktx)
   
-  // 🚀 أحدث إصدارات الزجاج واستخراج الألوان (2026)
+  // Liquid Glass & Palette
   implementation("androidx.palette:palette-ktx:1.0.0")
-  implementation("com.github.skydoves:cloudy:0.5.0") // الإصدار الأحدث والأكثر استقراراً
+  implementation("com.github.skydoves:cloudy:0.5.0") 
   
   implementation(libs.coil.compose)
   implementation(libs.coil.video)
