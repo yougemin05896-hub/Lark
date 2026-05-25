@@ -1,11 +1,16 @@
 package com.example.presentation.player
 
+import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -26,6 +31,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -45,6 +53,7 @@ class ComposePlayerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        // Edge-to-Edge Experience
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -52,12 +61,17 @@ class ComposePlayerActivity : ComponentActivity() {
 
         val uriString = intent.getStringExtra("VIDEO_URI") ?: ""
 
+        // Crash-proof ExoPlayer initialization
         try {
             player = ExoPlayer.Builder(this).build().apply {
-                val uri = Uri.parse(uriString)
-                setMediaItem(MediaItem.fromUri(uri))
-                prepare()
-                playWhenReady = true
+                if (uriString.isNotEmpty()) {
+                    val uri = Uri.parse(uriString)
+                    setMediaItem(MediaItem.fromUri(uri))
+                    prepare()
+                    playWhenReady = true
+                } else {
+                    Toast.makeText(this@ComposePlayerActivity, "Empty URI provided.", Toast.LENGTH_SHORT).show()
+                }
             }
         } catch (e: Exception) {
             Toast.makeText(this, "Failed to load video: ${e.message}", Toast.LENGTH_LONG).show()
@@ -67,7 +81,7 @@ class ComposePlayerActivity : ComponentActivity() {
             MaterialTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color.Black
+                    color = Color.Black // AMOLED Pitch-Black background
                 ) {
                     GlassPlayerUI(
                         player = player,
@@ -91,6 +105,7 @@ fun GlassPlayerUI(player: ExoPlayer?, onClose: () -> Unit) {
     var currentPosition by remember { mutableLongStateOf(0L) }
     var duration by remember { mutableLongStateOf(0L) }
     
+    // Auto-hide controls after 3 seconds of inactivity while playing
     LaunchedEffect(isControlsVisible, isPlaying) {
         if (isControlsVisible && isPlaying) {
             delay(3000)
@@ -98,6 +113,7 @@ fun GlassPlayerUI(player: ExoPlayer?, onClose: () -> Unit) {
         }
     }
 
+    // Sync ExoPlayer state with Compose UI state
     LaunchedEffect(player) {
         while (true) {
             if (player != null) {
@@ -105,10 +121,11 @@ fun GlassPlayerUI(player: ExoPlayer?, onClose: () -> Unit) {
                 duration = player.duration.coerceAtLeast(0L)
                 isPlaying = player.isPlaying
             }
-            delay(500)
+            delay(100) // Update faster for smoother timeline progress
         }
     }
 
+    // Main Container
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -117,16 +134,18 @@ fun GlassPlayerUI(player: ExoPlayer?, onClose: () -> Unit) {
                 indication = null
             ) { isControlsVisible = !isControlsVisible }
     ) {
+        // 1. THE EXOPLAYER SURFACE (Base Layer)
         AndroidView(
             factory = { ctx ->
                 PlayerView(ctx).apply {
                     this.player = player
-                    useController = false
+                    useController = false // We provide our own Glass UI
                 }
             },
             modifier = Modifier.fillMaxSize()
         )
 
+        // 2. THE GLASS CONTROLS OVERLAY (Top Layer)
         AnimatedVisibility(
             visible = isControlsVisible,
             enter = fadeIn(),
@@ -135,6 +154,7 @@ fun GlassPlayerUI(player: ExoPlayer?, onClose: () -> Unit) {
         ) {
             Box(Modifier.fillMaxSize()) {
                 
+                // TOP BAR (Close, PiP, Share, Volume)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -171,6 +191,7 @@ fun GlassPlayerUI(player: ExoPlayer?, onClose: () -> Unit) {
                      }
                 }
 
+                // CENTER CONTROLS (Rewind, Play/Pause, Forward)
                 Row(
                     modifier = Modifier.align(Alignment.Center),
                     horizontalArrangement = Arrangement.spacedBy(32.dp),
@@ -211,63 +232,177 @@ fun GlassPlayerUI(player: ExoPlayer?, onClose: () -> Unit) {
                      }
                 }
                 
+                // BOTTOM AREA (Timeline & Settings Pill)
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
-                    horizontalAlignment = Alignment.End, 
+                    horizontalAlignment = Alignment.CenterHorizontally, // Centered for the new bar
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    GlassPanel {
-                         Row(
-                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), 
-                             horizontalArrangement = Arrangement.spacedBy(16.dp)
-                         ) {
-                             IconBtn(Icons.Filled.Subtitles)
-                             IconBtn(Icons.Outlined.ChatBubbleOutline)
-                         }
+                    
+                    // CC & Audio Pill (Aligned End)
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                        GlassPanel {
+                             Row(
+                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), 
+                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
+                             ) {
+                                 IconBtn(Icons.Filled.Subtitles)
+                                 IconBtn(Icons.Outlined.ChatBubbleOutline)
+                             }
+                        }
                     }
 
-                    GlassPanel(modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                    ) {
-                        Row(
+                    // THE NEW DYNAMIC GLASS BOTTOM BAR (Timeline + Controls)
+                    InteractiveGlassBottomBar(
+                        currentPosition = currentPosition,
+                        duration = duration,
+                        onSeek = { percent -> player?.seekTo((percent * duration).toLong()) },
+                        player = player,
+                        isPlaying = isPlaying
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun InteractiveGlassBottomBar(
+    currentPosition: Long,
+    duration: Long,
+    onSeek: (Float) -> Unit,
+    player: ExoPlayer?,
+    isPlaying: Boolean
+) {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val barPadding = 48.dp // 24dp on each side
+    val totalBarWidth = screenWidth - barPadding
+    
+    // We have 4 main controls in this new bar: SkipBack, Play/Pause, SkipForward, Settings
+    val icons = listOf(
+        Icons.Filled.SkipPrevious,
+        if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+        Icons.Filled.SkipNext,
+        Icons.Filled.Settings
+    )
+    
+    var selectedIndex by remember { mutableIntStateOf(1) } // Default to Play/Pause
+    
+    val itemWidth = totalBarWidth / icons.size
+
+    // Spring-Animated Indicator Offset
+    val indicatorOffset by animateDpAsState(
+        targetValue = itemWidth * selectedIndex,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "IndicatorAnimation"
+    )
+
+    GlassPanel(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight(),
+        shape = RoundedCornerShape(32.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // TIMELINE SECTION
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, top = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val formatTime = { ms: Long ->
+                    val totalSeconds = ms / 1000
+                    val minutes = totalSeconds / 60
+                    val remainingSeconds = totalSeconds % 60
+                    String.format("%02d:%02d", minutes, remainingSeconds)
+                }
+                
+                val remaining = duration - currentPosition
+                
+                Text(formatTime(currentPosition), color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+                Spacer(Modifier.width(16.dp))
+                
+                Slider(
+                    value = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f,
+                    onValueChange = onSeek,
+                    modifier = Modifier.weight(1f),
+                    colors = SliderDefaults.colors(
+                        thumbColor = Color.White,
+                        activeTrackColor = Color.White,
+                        inactiveTrackColor = Color.White.copy(alpha = 0.3f),
+                        activeTickColor = Color.Transparent,
+                        inactiveTickColor = Color.Transparent
+                    )
+                )
+                
+                Spacer(Modifier.width(16.dp))
+                Text("-${formatTime(remaining.coerceAtLeast(0L))}", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+            }
+            
+            // CONTROLS SECTION WITH ANIMATED INDICATOR
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp)
+            ) {
+                // The Sliding Glass Indicator
+                Box(
+                    modifier = Modifier
+                        .offset(x = indicatorOffset)
+                        .width(itemWidth)
+                        .fillMaxHeight(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        Modifier
+                            .width(56.dp)
+                            .height(40.dp)
+                            .background(Color.White.copy(alpha = 0.25f), RoundedCornerShape(24.dp))
+                    )
+                }
+
+                // The Interactive Buttons
+                Row(
+                    Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    icons.forEachIndexed { index, icon ->
+                        Box(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 24.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = {
+                                        selectedIndex = index
+                                        when (index) {
+                                            0 -> player?.seekToPrevious()
+                                            1 -> if (isPlaying) player?.pause() else player?.play()
+                                            2 -> player?.seekToNext()
+                                            3 -> { /* Open Settings Bottom Sheet here */ }
+                                        }
+                                    }
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
-                            val formatTime = { ms: Long ->
-                                val totalSeconds = ms / 1000
-                                val minutes = totalSeconds / 60
-                                val remainingSeconds = totalSeconds % 60
-                                String.format("%02d:%02d", minutes, remainingSeconds)
-                            }
-                            
-                            val remaining = duration - currentPosition
-                            
-                            Text(formatTime(currentPosition), color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
-                            Spacer(Modifier.width(16.dp))
-                            
-                            Slider(
-                                value = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f,
-                                onValueChange = { percent ->
-                                    player?.seekTo((percent * duration).toLong())
-                                },
-                                modifier = Modifier.weight(1f),
-                                colors = SliderDefaults.colors(
-                                    thumbColor = Color.White,
-                                    activeTrackColor = Color.White,
-                                    inactiveTrackColor = Color.White.copy(alpha = 0.3f),
-                                    activeTickColor = Color.Transparent,
-                                    inactiveTickColor = Color.Transparent
-                                )
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = "Control $index",
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
                             )
-                            
-                            Spacer(Modifier.width(16.dp))
-                            Text("-${formatTime(remaining.coerceAtLeast(0L))}", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
                         }
                     }
                 }
@@ -276,20 +411,30 @@ fun GlassPlayerUI(player: ExoPlayer?, onClose: () -> Unit) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// CORE GLASS COMPONENT (Layered Architecture to prevent blurring the content)
+// ---------------------------------------------------------------------------
 @Composable
 fun GlassPanel(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(32.dp),
     content: @Composable BoxScope.() -> Unit
 ) {
-    Box(
-        modifier = modifier
-            .cloudy(radius = 25)
-            .background(Color.Black.copy(alpha = 0.35f), shape)
-            .border(0.5.dp, Color.White.copy(alpha = 0.15f), shape)
-            .clip(shape),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        // 1. BACKGROUND LAYER (Blurred & Tinted)
+        // This isolates the cloudy effect so it ONLY blurs what is behind the Box,
+        // and does NOT blur the icons or text placed inside the Box.
+        Box(
+            modifier = Modifier
+                .matchParentSize() // Fills the parent Box exactly
+                .clip(shape) // Clips the blur to our desired shape
+                .cloudy(radius = 35) // Heavy blur for iOS liquid glass feel
+                .background(Color.Black.copy(alpha = 0.45f)) // Dark tint for contrast
+                .border(0.5.dp, Color.White.copy(alpha = 0.15f), shape) // Subtle glass edge highlight
+        )
+        
+        // 2. FOREGROUND LAYER (Crystal Clear Content)
+        // Everything passed into 'content()' goes here and stays sharp.
         content()
     }
 }
